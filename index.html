@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StudyMind AI – Your Personal Tutor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --navy: #0f1e3c;
+    --navy-light: #1a2f54;
+    --gold: #f0b429;
+    --gold-light: #fcd34d;
+    --cream: #faf8f3;
+    --cream2: #f3f0e8;
+    --white: #ffffff;
+    --border: #e2ddd4;
+    --text: #1a1a2e;
+    --text-muted: #6b6b7b;
+    --ai-bg: #ffffff;
+    --user-bg: var(--navy);
+    --sidebar-bg: #ffffff;
+    --input-bg: #ffffff;
+    --shadow: 0 4px 24px rgba(15,30,60,0.10);
+    --radius: 18px;
+  }
+  .dark {
+    --cream: #12192e;
+    --cream2: #0f1626;
+    --white: #1c2640;
+    --border: #2a3555;
+    --text: #e8e8f0;
+    --text-muted: #8a8aaa;
+    --ai-bg: #1c2640;
+    --sidebar-bg: #182038;
+    --input-bg: #1c2640;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); overflow: hidden; }
+
+  /* ─── LAYOUT ───────────────────────────────────────────── */
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* ─── HEADER ────────────────────────────────────────────── */
+  header {
+    background: var(--navy);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 62px; flex-shrink: 0;
+    border-bottom: 2.5px solid var(--gold);
+    position: relative; z-index: 30;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-badge {
+    width: 36px; height: 36px; background: var(--gold);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-weight: 700; color: var(--navy); font-size: 18px;
+  }
+  .logo-text { font-family: 'Playfair Display', serif; font-size: 22px; color: #fff; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-text span { color: var(--gold); }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .icon-btn {
+    background: none; border: none; cursor: pointer; color: var(--gold);
+    width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .icon-btn:hover { background: rgba(240,180,41,0.12); }
+  .icon-btn svg { width: 20px; height: 20px; }
+  #hamburger { display: none; }
+
+  /* ─── BODY ──────────────────────────────────────────────── */
+  .body { display: flex; flex: 1; overflow: hidden; }
+
+  /* ─── SIDEBAR ───────────────────────────────────────────── */
+  aside {
+    width: 270px; flex-shrink: 0; background: var(--sidebar-bg);
+    border-right: 1.5px solid var(--border); display: flex; flex-direction: column;
+    overflow-y: auto; transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar-section { padding: 20px 18px 0; }
+  .sidebar-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); margin-bottom: 7px; display: block; }
+  select, .select-styled {
+    width: 100%; padding: 9px 12px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--cream); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer;
+    outline: none; transition: border 0.15s, box-shadow 0.15s; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b7b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    padding-right: 32px;
+  }
+  select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(240,180,41,0.15); }
+  .sidebar-gap { height: 16px; }
+
+  .sidebar-divider { border: none; border-top: 1.5px solid var(--border); margin: 18px 0; }
+
+  .sidebar-btn {
+    width: 100%; padding: 11px 16px; border-radius: 12px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.15s;
+  }
+  .sidebar-btn.primary { background: var(--navy); color: var(--gold); }
+  .sidebar-btn.primary:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .sidebar-btn.secondary { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+  .sidebar-btn.secondary:hover { border-color: var(--gold); color: var(--gold); }
+  .sidebar-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .sidebar-btns { padding: 0 18px 20px; display: flex; flex-direction: column; gap: 9px; margin-top: auto; }
+
+  /* Quick topics */
+  .quick-topics { padding: 0 18px; }
+  .quick-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); margin-bottom: 9px; display: block; }
+  .topics-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .topic-chip {
+    font-size: 11px; font-weight: 500; padding: 5px 10px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: var(--cream); color: var(--text);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .topic-chip:hover { border-color: var(--gold); color: var(--gold); background: rgba(240,180,41,0.06); }
+
+  /* Search mode toggle */
+  .search-toggle { display: flex; align-items: center; gap: 8px; padding: 12px 18px; }
+  .toggle-label { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+  .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0; background: var(--border); border-radius: 20px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute; width: 14px; height: 14px; left: 3px; bottom: 3px;
+    background: #fff; border-radius: 50%; transition: transform 0.2s;
+  }
+  input:checked + .toggle-slider { background: var(--gold); }
+  input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+  /* ─── CHAT AREA ─────────────────────────────────────────── */
+  main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--cream); }
+  #chat-scroll { flex: 1; overflow-y: auto; padding: 32px 24px 16px; scroll-behavior: smooth; }
+  #chat-scroll::-webkit-scrollbar { width: 5px; }
+  #chat-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  /* Welcome screen */
+  #welcome {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; text-align: center; gap: 16px; padding: 40px 20px;
+  }
+  .welcome-icon {
+    width: 72px; height: 72px; background: var(--navy); border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 32px rgba(15,30,60,0.25);
+  }
+  .welcome-icon svg { width: 36px; height: 36px; color: var(--gold); }
+  #welcome h1 { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--text); font-weight: 700; }
+  #welcome p { color: var(--text-muted); font-size: 14px; max-width: 380px; line-height: 1.6; }
+  .welcome-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+  .welcome-chip {
+    padding: 8px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--white); color: var(--text); font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .welcome-chip:hover { border-color: var(--gold); color: var(--navy); box-shadow: 0 2px 8px rgba(240,180,41,0.2); }
+
+  /* Messages */
+  .msg-row { display: flex; gap: 12px; margin-bottom: 20px; animation: fadein 0.3s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .msg-row.user { flex-direction: row-reverse; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+  }
+  .avatar.ai { background: var(--navy); color: var(--gold); font-family: 'Playfair Display', serif; }
+  .avatar.user { background: var(--gold); color: var(--navy); }
+  .bubble {
+    max-width: 72%; padding: 14px 18px; border-radius: var(--radius);
+    font-size: 14px; line-height: 1.65; box-shadow: var(--shadow);
+  }
+  .bubble.ai { background: var(--ai-bg); border: 1.5px solid var(--border); border-top-left-radius: 4px; color: var(--text); }
+  .bubble.user { background: var(--navy); color: #fff; border-top-right-radius: 4px; }
+  .bubble.ai h1, .bubble.ai h2, .bubble.ai h3 { font-family: 'Playfair Display', serif; margin: 10px 0 5px; color: var(--navy); }
+  .dark .bubble.ai h1, .dark .bubble.ai h2, .dark .bubble.ai h3 { color: var(--gold-light); }
+  .bubble.ai p { margin-bottom: 8px; }
+  .bubble.ai ul, .bubble.ai ol { margin: 8px 0 8px 18px; }
+  .bubble.ai li { margin-bottom: 4px; }
+  .bubble.ai code { background: var(--cream2); padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+  .bubble.ai pre { background: var(--navy); color: var(--gold-light); padding: 14px; border-radius: 10px; overflow-x: auto; margin: 10px 0; }
+  .bubble.ai pre code { background: none; color: inherit; padding: 0; }
+  .bubble.ai strong { color: var(--navy); font-weight: 700; }
+  .dark .bubble.ai strong { color: var(--gold-light); }
+  .bubble.ai table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+  .bubble.ai th { background: var(--navy); color: var(--gold); padding: 8px 12px; text-align: left; }
+  .bubble.ai td { padding: 7px 12px; border-bottom: 1px solid var(--border); }
+  .bubble.ai blockquote { border-left: 3px solid var(--gold); padding-left: 12px; color: var(--text-muted); margin: 10px 0; }
+  .msg-meta { font-size: 10px; color: var(--text-muted); margin-top: 5px; display: flex; align-items: center; gap: 6px; }
+  .meta-badge { background: var(--navy); color: var(--gold); padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .speak-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; gap: 3px; font-size: 11px; font-family: 'DM Sans', sans-serif; padding: 3px 6px; border-radius: 6px; transition: all 0.15s; }
+  .speak-btn:hover { color: var(--navy); background: var(--cream2); }
+  .speak-btn svg { width: 13px; height: 13px; }
+
+  /* Image preview in message */
+  .msg-img { max-width: 200px; border-radius: 10px; margin-bottom: 8px; display: block; }
+
+  /* ─── LOADING ────────────────────────────────────────────── */
+  .typing-row { display: flex; gap: 12px; margin-bottom: 20px; }
+  .typing-bubble { background: var(--ai-bg); border: 1.5px solid var(--border); border-radius: var(--radius); border-top-left-radius: 4px; padding: 16px 20px; display: flex; gap: 6px; align-items: center; }
+  .dot { width: 8px; height: 8px; background: var(--gold); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity: 0.5; } 40% { transform: translateY(-8px); opacity: 1; } }
+
+  /* ─── INPUT AREA ─────────────────────────────────────────── */
+  .input-area { padding: 14px 24px 18px; background: var(--cream); border-top: 1.5px solid var(--border); flex-shrink: 0; }
+  .input-box {
+    max-width: 860px; margin: 0 auto;
+    background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 16px;
+    display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px;
+    box-shadow: 0 2px 12px rgba(15,30,60,0.07); transition: border 0.15s, box-shadow 0.15s;
+  }
+  .input-box:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(240,180,41,0.12), 0 4px 16px rgba(15,30,60,0.10); }
+  .input-actions { display: flex; align-items: center; gap: 4px; }
+  .action-btn {
+    background: none; border: none; cursor: pointer; color: var(--text-muted);
+    width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { color: var(--navy); background: var(--cream2); }
+  .action-btn.active { color: var(--gold); background: rgba(240,180,41,0.1); }
+  .action-btn svg { width: 17px; height: 17px; }
+  #user-input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+    resize: none; max-height: 130px; line-height: 1.5; padding: 4px 0;
+    min-height: 28px;
+  }
+  #user-input::placeholder { color: var(--text-muted); }
+  .send-btn {
+    width: 38px; height: 38px; background: var(--navy); color: var(--gold);
+    border: none; border-radius: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--navy-light); transform: scale(1.05); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .send-btn svg { width: 17px; height: 17px; }
+
+  /* Attachment preview */
+  .attach-preview {
+    max-width: 860px; margin: 0 auto 8px; display: flex; align-items: center; gap: 8px;
+    background: var(--cream2); border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 12px;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .attach-preview img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+  .attach-preview .remove-btn { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-muted); }
+  .attach-preview .remove-btn:hover { color: #e53e3e; }
+  .attach-preview svg { width: 14px; height: 14px; }
+
+  /* Error */
+  .error-bar { background: #fff0f0; border: 1.5px solid #fca5a5; color: #b91c1c; padding: 10px 16px; border-radius: 10px; font-size: 13px; margin: 0 24px 8px; max-width: 860px; width: calc(100% - 48px); }
+
+  /* ─── PORTAL MODAL ───────────────────────────────────────── */
+  #portal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 24px;
+  }
+  #portal-overlay.open { display: flex; }
+  .portal-box { background: var(--white); width: 100%; max-width: 1000px; height: 85vh; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,0.4); }
+  .portal-header { background: var(--navy); color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .portal-header h3 { font-family: 'Playfair Display', serif; font-size: 18px; }
+  .portal-header button { background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.7); font-size: 22px; line-height: 1; }
+  .portal-header button:hover { color: #fff; }
+  #portal-frame { flex: 1; border: none; }
+
+  /* ─── RESPONSIVE ─────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    aside { position: fixed; top: 62px; left: 0; bottom: 0; z-index: 40; transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,0.15); }
+    aside.open { transform: translateX(0); }
+    #hamburger { display: flex; }
+    #chat-scroll { padding: 20px 14px 10px; }
+    .bubble { max-width: 88%; }
+    .input-area { padding: 10px 14px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <button class="icon-btn" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="logo-badge">S</div>
+      <span class="logo-text">Study<span>Mind</span> AI</span>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="dark-btn" onclick="toggleDark()" aria-label="Toggle dark mode">
+        <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="body">
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+      <div class="sidebar-section">
+        <span class="sidebar-label">Country</span>
+        <select id="country-select"></select>
+        <div class="sidebar-gap"></div>
+        <span class="sidebar-label">Grade / Class</span>
+        <select id="grade-select"></select>
+        <div class="sidebar-gap"></div>
+        <span class="sidebar-label">Subject</span>
+        <select id="subject-select"></select>
+        <div class="sidebar-gap"></div>
+        <span class="sidebar-label">Response Language</span>
+        <select id="language-select"></select>
+      </div>
+
+      <div class="search-toggle" style="margin-top:14px;">
+        <label class="toggle">
+          <input type="checkbox" id="search-toggle-cb" />
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label" id="search-toggle-label">Web Search: Off</span>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <div class="quick-topics">
+        <span class="quick-title">Quick Topics</span>
+        <div class="topics-grid" id="topics-grid"></div>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <div class="sidebar-btns">
+        <button class="sidebar-btn primary" onclick="openPortal('https://ncert.nic.in/textbook.php')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          NCERT Library
+        </button>
+        <button class="sidebar-btn secondary" onclick="generateQuiz()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Generate Quiz
+        </button>
+        <button class="sidebar-btn secondary" onclick="clearChat()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+          New Chat
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main>
+      <div id="chat-scroll">
+        <!-- Welcome -->
+        <div id="welcome">
+          <div class="welcome-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold)"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.29h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.18 6.18l1-1a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <h1>Welcome to StudyMind AI</h1>
+          <p>Your personal AI tutor — curriculum-aligned, step-by-step explanations in your language, for any grade or subject.</p>
+          <div class="welcome-chips" id="welcome-chips"></div>
+        </div>
+        <!-- Messages injected here -->
+        <div id="messages"></div>
+        <div id="typing" style="display:none;" class="typing-row">
+          <div class="avatar ai">S</div>
+          <div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+      </div>
+
+      <div id="error-bar" class="error-bar" style="display:none;"></div>
+
+      <!-- Attachment preview -->
+      <div id="attach-preview" class="attach-preview" style="display:none;"></div>
+
+      <!-- INPUT -->
+      <div class="input-area">
+        <div class="input-box">
+          <div class="input-actions">
+            <button class="action-btn" title="Upload Image" onclick="document.getElementById('img-input').click()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </button>
+            <button class="action-btn" title="Upload PDF" onclick="document.getElementById('pdf-input').click()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </button>
+          </div>
+          <textarea id="user-input" placeholder="Ask anything — maths, science, history…" rows="1"></textarea>
+          <button class="send-btn" id="send-btn" onclick="handleSend()" title="Send">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImageUpload(event)" />
+        <input type="file" id="pdf-input" accept="application/pdf" style="display:none" onchange="handlePdfUpload(event)" />
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div id="portal-overlay">
+  <div class="portal-box">
+    <div class="portal-header">
+      <h3>Educational Portal</h3>
+      <button onclick="closePortal()">✕</button>
+    </div>
+    <iframe id="portal-frame" src=""></iframe>
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────
+const COUNTRIES = ["India","USA","UK","Australia","Canada","Germany","France","Japan","China","Brazil","South Africa","Nigeria","Pakistan","Bangladesh","Sri Lanka","Nepal","Saudi Arabia","UAE","Egypt","Russia","South Korea","Singapore","Malaysia","Indonesia","Philippines","Mexico","Argentina","Italy","Spain","Turkey","Kenya","Ghana","Ethiopia","Vietnam","Thailand","Iran","Iraq","Poland","Netherlands","Sweden","Norway","Denmark","Finland","New Zealand","Portugal","Greece","Israel","Switzerland","Belgium"];
+const GRADES = ["Grade 1 (Class 1)","Grade 2 (Class 2)","Grade 3 (Class 3)","Grade 4 (Class 4)","Grade 5 (Class 5)","Grade 6 (Class 6)","Grade 7 (Class 7)","Grade 8 (Class 8)","Grade 9 (Class 9)","Grade 10 (Class 10)","Grade 11 (Class 11)","Grade 12 (Class 12)","Undergraduate (University)","Postgraduate (Masters)","Competitive Exam Prep"];
+const SUBJECTS = ["Mathematics","Science","Physics","Chemistry","Biology","English","Hindi","History","Geography","Computer Science","Economics","Political Science","Accountancy","Literature","Environmental Science","Psychology","Statistics","Art","Music","Physical Education","General"];
+const LANGUAGES = [
+  {name:"English",code:"English"},{name:"हिन्दी (Hindi)",code:"Hindi"},{name:"اردو (Urdu)",code:"Urdu"},
+  {name:"বাংলা (Bengali)",code:"Bengali"},{name:"العربية (Arabic)",code:"Arabic"},{name:"Français (French)",code:"French"},
+  {name:"Deutsch (German)",code:"German"},{name:"Español (Spanish)",code:"Spanish"},{name:"Português (Portuguese)",code:"Portuguese"},
+  {name:"Русский (Russian)",code:"Russian"},{name:"中文 (Chinese)",code:"Chinese"},{name:"日本語 (Japanese)",code:"Japanese"},
+  {name:"한국어 (Korean)",code:"Korean"},{name:"தமிழ் (Tamil)",code:"Tamil"},{name:"తెలుగు (Telugu)",code:"Telugu"},
+  {name:"मराठी (Marathi)",code:"Marathi"},{name:"ગુજરાતી (Gujarati)",code:"Gujarati"},{name:"ਪੰਜਾਬੀ (Punjabi)",code:"Punjabi"},
+  {name:"Bahasa Indonesia",code:"Indonesian"},{name:"Türkçe (Turkish)",code:"Turkish"},{name:"Tiếng Việt (Vietnamese)",code:"Vietnamese"},
+  {name:"ภาษาไทย (Thai)",code:"Thai"},{name:"Italiano (Italian)",code:"Italian"},{name:"Polski (Polish)",code:"Polish"}
+];
+const QUICK_TOPICS = [
+  {label:"Photosynthesis",prompt:"Explain photosynthesis step by step"},
+  {label:"Pythagoras",prompt:"What is the Pythagoras theorem and how to use it?"},
+  {label:"Newton's Laws",prompt:"Explain Newton's laws of motion with examples"},
+  {label:"WW1 Causes",prompt:"What are the main causes of World War 1?"},
+  {label:"Digestion",prompt:"How does the human digestive system work?"},
+  {label:"Quadratics",prompt:"Explain quadratic equations with examples"},
+  {label:"Periodic Table",prompt:"What is the periodic table and how is it organized?"},
+  {label:"DNA",prompt:"Explain DNA structure and replication simply"}
+];
+
+// ─── STATE ────────────────────────────────────────────────────
+let messages = [];
+let isLoading = false;
+let selectedImage = null;
+let selectedPdf = null;
+let darkMode = false;
+
+// ─── INIT ─────────────────────────────────────────────────────
+function init() {
+  // Populate selects
+  const cs = document.getElementById('country-select');
+  COUNTRIES.forEach(c => { const o=document.createElement('option'); o.value=o.textContent=c; if(c==='India')o.selected=true; cs.appendChild(o); });
+  const gs = document.getElementById('grade-select');
+  GRADES.forEach(g => { const o=document.createElement('option'); o.value=o.textContent=g; if(g.includes('9'))o.selected=true; gs.appendChild(o); });
+  const ss = document.getElementById('subject-select');
+  SUBJECTS.forEach(s => { const o=document.createElement('option'); o.value=o.textContent=s; ss.appendChild(o); });
+  const ls = document.getElementById('language-select');
+  LANGUAGES.forEach(l => { const o=document.createElement('option'); o.value=l.code; o.textContent=l.name; if(l.code==='English')o.selected=true; ls.appendChild(o); });
+
+  // Quick topics
+  const tg = document.getElementById('topics-grid');
+  QUICK_TOPICS.forEach(t => {
+    const b = document.createElement('button');
+    b.className='topic-chip'; b.textContent=t.label;
+    b.onclick=()=>{ document.getElementById('user-input').value=t.prompt; handleSend(); };
+    tg.appendChild(b);
+  });
+
+  // Welcome chips
+  const wc = document.getElementById('welcome-chips');
+  QUICK_TOPICS.slice(0,6).forEach(t => {
+    const b = document.createElement('button');
+    b.className='welcome-chip'; b.textContent=t.label;
+    b.onclick=()=>{ document.getElementById('user-input').value=t.prompt; handleSend(); };
+    wc.appendChild(b);
+  });
+
+  // Search toggle
+  document.getElementById('search-toggle-cb').addEventListener('change', function() {
+    document.getElementById('search-toggle-label').textContent = 'Web Search: ' + (this.checked?'On':'Off');
+  });
+
+  // Textarea auto-resize
+  const ta = document.getElementById('user-input');
+  ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,130)+'px'; });
+  ta.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); } });
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────
+function getSettings() {
+  return {
+    country: document.getElementById('country-select').value,
+    grade: document.getElementById('grade-select').value,
+    subject: document.getElementById('subject-select').value,
+    language: document.getElementById('language-select').value,
+    webSearch: document.getElementById('search-toggle-cb').checked
+  };
+}
+
+function getSystemPrompt() {
+  const {country, grade, subject, language} = getSettings();
+  const langName = LANGUAGES.find(l=>l.code===language)?.name || language;
+  return `You are StudyMind AI — a world-class educational assistant and expert tutor. Your primary goal is to provide 100% accurate, curriculum-aligned, and pedagogically sound explanations for students.
+
+CURRENT STUDENT CONTEXT:
+- Country: ${country}
+- Education Board/Curriculum: The standard national curriculum of ${country}.
+- Class/Grade: ${grade}
+- Subject: ${subject}
+- Response Language: ${langName}
+
+YOUR CORE GUIDELINES:
+1. Always align your explanations with the ${country} curriculum for ${grade}.
+2. Provide step-by-step reasoning for Math and Science problems.
+3. Use proper Unicode math symbols (×, ÷, √, ², π, ±, ≤, ≥) — never dollar signs.
+4. Use examples relevant to ${country} culture and context.
+5. Be encouraging, clear, and pedagogically appropriate for ${grade}.
+6. When answering in ${langName}, use natural, educational language.
+7. Format your response with clear headings, bullet points, and numbered steps where helpful.
+8. For India students, you may reference NCERT textbooks.
+
+Respond only in ${langName}.`;
+}
+
+// ─── CHAT LOGIC ───────────────────────────────────────────────
+async function handleSend(overrideText) {
+  const ta = document.getElementById('user-input');
+  const text = overrideText !== undefined ? overrideText : ta.value.trim();
+  if ((!text && !selectedImage && !selectedPdf) || isLoading) return;
+
+  // Hide welcome
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('error-bar').style.display = 'none';
+
+  // Add user message
+  const userMsg = { role:'user', content: text, image: selectedImage, pdfName: selectedPdf?.name };
+  messages.push(userMsg);
+  renderMessage(userMsg, messages.length-1);
+  if(!overrideText) { ta.value=''; ta.style.height='auto'; }
+
+  const curImage = selectedImage;
+  const curPdf = selectedPdf;
+  clearAttachments();
+
+  setLoading(true);
+
+  try {
+    const {subject, grade, country} = getSettings();
+    const systemPrompt = getSystemPrompt();
+
+    // Build messages array for Anthropic API
+    const apiMessages = [];
+    // Add history (last 10 exchanges for context)
+    const historyStart = Math.max(0, messages.length-11);
+    for (let i = historyStart; i < messages.length-1; i++) {
+      const m = messages[i];
+      apiMessages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content });
+    }
+
+    // Current user message content
+    const userContent = [];
+    if (curImage) {
+      const base64 = curImage.split(',')[1];
+      const mtype = curImage.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+      userContent.push({ type:'image', source:{ type:'base64', media_type: mtype, data: base64 } });
+    }
+    if (curPdf) {
+      const base64 = curPdf.data.split(',')[1];
+      userContent.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data: base64 } });
+    }
+    userContent.push({ type:'text', text: text || 'Please analyze the uploaded content.' });
+    apiMessages.push({ role:'user', content: userContent });
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: apiMessages
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({}));
+      throw new Error(err.error?.message || `API error ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const reply = data.content?.find(b=>b.type==='text')?.text || "I'm sorry, I couldn't generate a response.";
+
+    const aiMsg = { role:'ai', content: reply, subject, context:`${country} · ${grade}` };
+    messages.push(aiMsg);
+    renderMessage(aiMsg, messages.length-1);
+  } catch(e) {
+    console.error(e);
+    showError('⚠️ ' + (e.message || 'Error connecting to StudyMind AI.'));
+  } finally {
+    setLoading(false);
+  }
+}
+
+function renderMessage(msg, index) {
+  const container = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = `msg-row ${msg.role}`;
+  row.dataset.index = index;
+
+  const avatar = document.createElement('div');
+  avatar.className = `avatar ${msg.role}`;
+  avatar.textContent = msg.role === 'ai' ? 'S' : 'U';
+
+  const right = document.createElement('div');
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${msg.role}`;
+
+  if (msg.image) {
+    const img = document.createElement('img');
+    img.src = msg.image; img.className='msg-img'; img.alt='Uploaded';
+    bubble.appendChild(img);
+  }
+  if (msg.pdfName) {
+    const pdfTag = document.createElement('div');
+    pdfTag.style.cssText = 'font-size:11px;color:var(--text-muted);margin-bottom:6px;';
+    pdfTag.textContent = '📄 ' + msg.pdfName;
+    bubble.appendChild(pdfTag);
+  }
+
+  if (msg.role === 'ai') {
+    bubble.innerHTML += marked.parse(msg.content || '');
+    // Code highlight classes
+    bubble.querySelectorAll('pre code').forEach(el => el.parentElement.classList.add('code-block'));
+  } else {
+    const p = document.createElement('p');
+    p.style.whiteSpace = 'pre-wrap';
+    p.textContent = msg.content;
+    bubble.appendChild(p);
+  }
+
+  right.appendChild(bubble);
+
+  if (msg.role === 'ai' && msg.subject) {
+    const meta = document.createElement('div');
+    meta.className='msg-meta';
+    meta.innerHTML = `<span class="meta-badge">${msg.subject}</span><span>${msg.context||''}</span>
+      <button class="speak-btn" onclick="speakMsg(${index})">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        Listen
+      </button>`;
+    right.appendChild(meta);
+  }
+
+  row.appendChild(avatar);
+  row.appendChild(right);
+  container.appendChild(row);
+  scrollBottom();
+}
+
+function setLoading(val) {
+  isLoading = val;
+  document.getElementById('typing').style.display = val ? 'flex' : 'none';
+  document.getElementById('send-btn').disabled = val;
+  if (val) scrollBottom();
+}
+
+function scrollBottom() {
+  const s = document.getElementById('chat-scroll');
+  s.scrollTop = s.scrollHeight;
+}
+
+function showError(msg) {
+  const eb = document.getElementById('error-bar');
+  eb.textContent = msg; eb.style.display = 'block';
+}
+
+// ─── QUIZ ─────────────────────────────────────────────────────
+function generateQuiz() {
+  const {subject, grade, country} = getSettings();
+  const prompt = `Generate a 5-question multiple-choice quiz about ${subject} for ${grade} level in ${country}. Format clearly with questions A/B/C/D options. After all questions, provide an "Answers" section with correct answers and brief explanations.`;
+  document.getElementById('user-input').value = prompt;
+  handleSend();
+}
+
+// ─── CLEAR ────────────────────────────────────────────────────
+function clearChat() {
+  messages = [];
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('welcome').style.display = 'flex';
+  document.getElementById('error-bar').style.display = 'none';
+}
+
+// ─── SPEAK ────────────────────────────────────────────────────
+function speakMsg(index) {
+  const msg = messages[index];
+  if (!msg || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const text = msg.content.replace(/[#*`_\[\]]/g,'').slice(0,800);
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.95; utt.pitch = 1;
+  window.speechSynthesis.speak(utt);
+}
+
+// ─── FILE UPLOADS ─────────────────────────────────────────────
+function handleImageUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    selectedImage = reader.result;
+    selectedPdf = null;
+    showAttachPreview('image', reader.result, file.name);
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+
+function handlePdfUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    selectedPdf = {name: file.name, data: reader.result};
+    selectedImage = null;
+    showAttachPreview('pdf', null, file.name);
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+
+function showAttachPreview(type, src, name) {
+  const prev = document.getElementById('attach-preview');
+  prev.style.display='flex';
+  prev.innerHTML = '';
+  if (type==='image') {
+    const img = document.createElement('img');
+    img.src=src; prev.appendChild(img);
+  } else {
+    const ic = document.createElement('span');
+    ic.textContent='📄'; ic.style.fontSize='24px';
+    prev.appendChild(ic);
+  }
+  const nm = document.createElement('span');
+  nm.textContent=name; prev.appendChild(nm);
+  const rm = document.createElement('button');
+  rm.className='remove-btn'; rm.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  rm.onclick=clearAttachments;
+  prev.appendChild(rm);
+}
+
+function clearAttachments() {
+  selectedImage = null; selectedPdf = null;
+  document.getElementById('attach-preview').style.display='none';
+  document.getElementById('attach-preview').innerHTML='';
+}
+
+// ─── DARK MODE ────────────────────────────────────────────────
+function toggleDark() {
+  darkMode = !darkMode;
+  document.documentElement.classList.toggle('dark', darkMode);
+  document.getElementById('moon-icon').style.display = darkMode?'none':'block';
+  document.getElementById('sun-icon').style.display = darkMode?'block':'none';
+}
+
+// ─── SIDEBAR ─────────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  const sidebar = document.getElementById('sidebar');
+  const hamburger = document.getElementById('hamburger');
+  if (window.innerWidth<=768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+    sidebar.classList.remove('open');
+  }
+});
+
+// ─── PORTAL ──────────────────────────────────────────────────
+function openPortal(url) {
+  document.getElementById('portal-frame').src=url;
+  document.getElementById('portal-overlay').classList.add('open');
+}
+function closePortal() {
+  document.getElementById('portal-overlay').classList.remove('open');
+  document.getElementById('portal-frame').src='';
+}
+
+// ─── START ────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
